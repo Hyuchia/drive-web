@@ -4,13 +4,14 @@ import { Alert } from 'react-bootstrap';
 import $ from 'jquery';
 import _ from 'lodash';
 import fileDownload from 'js-file-download';
-
-import FileCommander from './FileCommander';
 import update from 'immutability-helper';
 import Popup from "reactjs-popup";
+
+import FileCommander from './FileCommander';
 import history from '../../history';
 import "../../App.css";
 import NavigationBar from "../navigationBar/NavigationBar";
+import { uploadFile } from '../../utils'
 import { resolve } from "dns";
 import { rejects } from "assert";
 
@@ -196,21 +197,36 @@ class XCloud extends React.Component {
   }
 
   uploadFile = (e) => {
-    const data = new FormData();
-    let headers = this.setHeaders();
-    delete headers['content-type'];
-    data.append('xfile', e.target.files[0]);
-    fetch(`/api/storage/folder/${this.state.currentFolderId}/upload`, {
-      method: "post",
-      headers,
-      body: data
-    }).then((response) => {
-      if (response.status === 402) {
-        this.setState({ rateLimitModal: true })
-        return;
+    let test = true;
+    if (test) {
+      const folderName = this.state.namePath.length > 1 ? this.state.namePath[this.state.namePath.length - 1].name : "Root folder";
+      const folder = {
+        name: folderName,
+        bucket: this.state.currentFolderBucket
       }
-      this.getFolderContent(this.state.currentFolderId);
-    })
+      uploadFile(this.props.user, folder, e.target.files[0])
+      .then((result) => {
+        console.log('Successfully uploaded file: ' + result.filename);
+      }).catch((error) => {
+        console.error(error);
+      });
+    } else {
+      const data = new FormData();
+      let headers = this.setHeaders();
+      delete headers['content-type'];
+      data.append('xfile', e.target.files[0]);
+      fetch(`/api/storage/folder/${this.state.currentFolderId}/upload`, {
+        method: "post",
+        headers,
+        body: data
+      }).then((response) => {
+        if (response.status === 402) {
+          this.setState({ rateLimitModal: true })
+          return;
+        }
+        this.getFolderContent(this.state.currentFolderId);
+      })
+    }
   }
 
   uploadDroppedFile = (e) => {

@@ -125,6 +125,7 @@ class Login extends React.Component {
               // Manage succesfull login
               response.json().then( (body) => {
                 const user = { 
+                  userId: body.user.userId,
                   email: this.state.email,  
                   mnemonic: decryptTextWithKey(body.user.mnemonic, this.state.password),
                   root_folder_id: body.user.root_folder_id,
