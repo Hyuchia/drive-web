@@ -110,7 +110,9 @@ function getEnvironment(email, password, mnemonic) {
     let opts = {
       bridge: process.env.REACT_APP_STORJ_BRIDGE,
       basicAuth: { email, password },
-      encryptionKey: mnemonic
+      encryptionKey: mnemonic,
+      protocol: 'https',
+      logger: console //ONLY FOR TESTING
     }
     return new Storj(opts);
   } catch (error) {
@@ -127,9 +129,8 @@ const storeFile = (user, bucketId, file, fileName) => {
       storj.on('ready', () => {
         let fileObj = storj.createFile(bucketId, fileName, file);
 
-        fileObj.on('ready', (res) => {
+        fileObj.on('ready', () => {
           console.log('File processed');
-          console.log(res);
         });
         fileObj.on('done', (res) => {
           console.log('Upload finished')

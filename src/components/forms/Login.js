@@ -127,13 +127,13 @@ class Login extends React.Component {
                 const user = { 
                   userId: body.user.userId,
                   email: this.state.email,  
-                  mnemonic: decryptTextWithKey(body.user.mnemonic, this.state.password),
+                  mnemonic: body.user.mnemonic ? decryptTextWithKey(body.user.mnemonic, this.state.password) : null,
                   root_folder_id: body.user.root_folder_id,
                   storeMnemonic: body.user.storeMnemonic 
                 };
                 this.props.handleKeySaved(user)
                 localStorage.setItem('xToken',body.token);
-                if (user.mnemonic && body.user.storeMnemonic === true) localStorage.setItem('xMnemonic', user.mnemonic);
+                if (user.mnemonic && body.user.storeMnemonic !== false) localStorage.setItem('xMnemonic', user.mnemonic);
                 localStorage.setItem('xUser', JSON.stringify(user));
                 this.setState({ 
                   isAuthenticated: true, 
@@ -167,7 +167,7 @@ class Login extends React.Component {
     const isValid = this.validateForm();
     return (
       <div>
-        <img src={logo} className="Logo" style={{height: 46 ,width: 46}}/>
+        <img src={logo} className="Logo" style={{height: 27.5, width: 52.4}}/>
         <div id="Login" className="Login">
         <div className="LoginHeader">
           <h2> Welcome to X Cloud</h2>
