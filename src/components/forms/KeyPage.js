@@ -36,7 +36,7 @@ class KeyPage extends React.Component {
   }
 
   componentDidMount() {
-    const user = localStorage.getItem('xUser');
+    const user = JSON.parse(localStorage.getItem('xUser'));
     // Check user authentication and redirect to login if necessary
     if (this.props.isAuthenticated || user) {
       // When exists user in local but isAuthenticated is not true, set props
