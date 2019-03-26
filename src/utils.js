@@ -111,7 +111,7 @@ function uploadFile (user, folder, file) {
         reject(err.message)
       });
 		} catch (error) {
-      reject(err.message)
+      reject(error.message)
 		}
 	})
 }

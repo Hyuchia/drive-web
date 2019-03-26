@@ -195,8 +195,8 @@ class XCloud extends React.Component {
   localDownloadFile = (id) => {
     downloadFile(this.props.user, this.state.currentFolderBucket, id)
       .then((result) => {
-        console.log('Succesfully downloaded file: ' + res.fileName);
-        fileDownload(res.blob, res.fileName)
+        console.log('Succesfully downloaded file: ' + result.fileName);
+        fileDownload(result.blob, result.fileName)
       }).catch((error) => {
         console.error(error);
       })
