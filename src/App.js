@@ -2,7 +2,6 @@ import _ from 'lodash';
 import React, { Component } from 'react';
 import { Switch, Route, Redirect } from 'react-router-dom';
 
-import KeyPage from './components/forms/KeyPage';
 import './App.css';
 import Login from './components/forms/Login';
 import Register from './components/forms/Register';
