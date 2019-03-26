@@ -11,7 +11,7 @@ import FileCommander from './FileCommander';
 import history from '../../history';
 import "../../App.css";
 import NavigationBar from "../navigationBar/NavigationBar";
-import { uploadFile } from '../../utils'
+import { uploadFile, downloadFile } from '../../utils'
 import { resolve } from "dns";
 import { rejects } from "assert";
 
@@ -192,6 +192,16 @@ class XCloud extends React.Component {
     })
   }
 
+  localDownloadFile = (id) => {
+    downloadFile(this.props.user, this.state.currentFolderBucket, id)
+      .then((result) => {
+        console.log('Succesfully downloaded file: ' + res.fileName);
+        fileDownload(res.blob, res.fileName)
+      }).catch((error) => {
+        console.error(error);
+      })
+  }
+
   openUploadFile = () => {
     $("input#uploadFile").trigger("click");
   }
@@ -350,7 +360,7 @@ class XCloud extends React.Component {
             //   folderTree={this.state.folderTree}
             currentCommanderItems={this.state.currentCommanderItems}
             openFolder={this.openFolder}
-            downloadFile={this.downloadFile}
+            downloadFile={this.localDownloadFile}
             selectCommanderItem={this.selectCommanderItem}
             namePath={this.state.namePath}
             handleFolderTraverseUp={this.folderTraverseUp.bind(this)}

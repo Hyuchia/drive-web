@@ -79,28 +79,59 @@ function uploadFile (user, folder, file) {
 			const fileNameNoExt = fileName.slice(0, extSeparatorPos)
 			console.log('Encrypting file name')
 			const encryptedFileName = encryptText(fileNameNoExt)
-
-			// CHECK IF EXISTS FILE WITH SAME NAME IN THE UPLOAD FOLDER
-
 			const fileExt = fileName.slice(extSeparatorPos + 1);
 			const encryptedFileNameWithExt = encryptedFileName + '.' + fileExt;
 			console.log('Uploading file to network');
 
+      // Call node network method to store file
       storeFile(user, folder.bucket, file, encryptedFileNameWithExt)
       .then(async (addedFile) => {
-        // CREATE REGS ON DB TO NEW FILE
-        // AND ADD THIS FILE TO FOLDER IN DB
+        const file = {
+          name: encryptedFileName,
+          type: fileExt,
+          bucketId: addedFile.bucket,
+          folder_id: folder.id,
+          size: addedFile.size
+        }
 
-        // END METHOD RETURNING FILE CREATED IN DB
-        resolve(addedFile)
+        // Create file in xCloud db and add it to folder
+        fetch('/api/storage/file', {
+          method: "post",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("xToken")}`,
+            "content-type": "application/json; charset=utf-8",
+            "internxt-mnemonic": localStorage.getItem("xMnemonic")
+          },
+          body: JSON.stringify({ file })
+        }).then(response => response.json())
+          .then(data => {
+            resolve(data)
+          });
       }).catch((err) => {
         reject(err.message)
       });
-			
 		} catch (error) {
-			console.error(error.message);
+      reject(err.message)
 		}
 	})
+}
+
+// Download file from node network
+// result is object containing:
+//  blob: blob object with data from file
+//  fileName: decrypted file name
+function downloadFile (user, folderBucket, fileId) {
+  return new Promise((resolve, reject) => {
+    // Check mnemonic
+    if (!user.mnemonic) throw new Error('Your mnemonic is invalid')
+
+    getFile(user, folderBucket, fileId)
+    .then((res) => {
+      resolve(res);
+    }).catch((err) => {
+      reject(err.message);
+    })
+  })
 }
 
 // Storj functions
@@ -148,6 +179,39 @@ const storeFile = (user, bucketId, file, fileName) => {
   });
 }
 
+const getFile = (user, bucketId, fileId) => {
+  return new Promise((resolve, reject) => {
+    try {
+      var fileName;
+      const storj = getEnvironment(user.email, user.userId, user.mnemonic);
+      var fileObj = storj.getFile(bucketId, fileId);
+
+      fileObj.on('downloaded', () => {
+        console.log('Finished downloading file!')
+      });
+      fileObj.on('done', () => {
+        console.log('file finished decrypting')
+        // Decrypt filename
+        const fileNameEnc = fileObj.name.split('.')[0];
+        const fileNameDecrypt = decryptText(fileNameEnc);
+        const fileExt = fileObj.name.split('.')[1];
+        fileName = `${fileNameDecrypt}.${fileExt}`;
+        
+        fileObj.getBlob(function (err, blob) {
+          if (err) throw err
+          resolve({blob, fileName});
+        })
+      })
+      fileObj.on('error', (error) => {
+        console.error(error);
+        reject(error);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
 export {
   copyToClipboard,
   passToHash,
@@ -155,5 +219,6 @@ export {
   decryptText,
   encryptTextWithKey,
   decryptTextWithKey,
-  uploadFile
+  uploadFile,
+  downloadFile
 }
