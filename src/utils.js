@@ -85,28 +85,33 @@ function uploadFile (user, folder, file) {
 
       // Call node network method to store file
       storeFile(user, folder.bucket, file, encryptedFileNameWithExt)
-      .then(async (addedFile) => {
-        const file = {
-          name: encryptedFileName,
-          type: fileExt,
-          bucketId: addedFile.bucket,
-          folder_id: folder.id,
-          size: addedFile.size
-        }
-
-        // Create file in xCloud db and add it to folder
-        fetch('/api/storage/file', {
-          method: "post",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("xToken")}`,
-            "content-type": "application/json; charset=utf-8",
-            "internxt-mnemonic": localStorage.getItem("xMnemonic")
-          },
-          body: JSON.stringify({ file })
-        }).then(response => response.json())
-          .then(data => {
-            resolve(data)
+      .then((addedFile) => {
+        if (addedFile) {
+          const file = {
+            name: encryptedFileName,
+            type: fileExt,
+            bucketId: addedFile.bucket,
+            folder_id: folder.id,
+            size: addedFile.size
+          }
+  
+          // Create file in xCloud db and add it to folder
+          fetch('/api/storage/file', {
+            method: "post",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("xToken")}`,
+              "content-type": "application/json; charset=utf-8",
+              "internxt-mnemonic": localStorage.getItem("xMnemonic")
+            },
+            body: JSON.stringify({ file })
+          }).then(response => response.json())
+            .then(data => {
+              resolve(data)
           });
+        } else {
+          // If storeFile fails uploading file, throw error
+          throw new Error('Error uploading file to node network');
+        }
       }).catch((err) => {
         reject(err.message)
       });
