@@ -6,6 +6,7 @@ import './FileCommander.css'
 import FileCommanderItem from './FileCommanderItem';
 import * as moment from 'moment'
 import DropdownArrowIcon from '../../assets/Dashboard-Icons/Dropdown\ arrow.svg';
+import BackToIcon from '../../assets/Dashboard-Icons/back-arrow.svg';
 
 const SORT_TYPES = {
     DATE_ADDED : 'Date_Added',
@@ -61,10 +62,10 @@ class FileCommander extends React.Component {
                 sortFunc = function(a, b) { return b.name.localeCompare(a.name) };
                 break;
             case SORT_TYPES.SIZE_ASC:
-                sortFunc = function(a, b) { return a.size > b.size };
+                sortFunc = function(a, b) { return a.size - b.size };
                 break;
             case SORT_TYPES.SIZE_DESC:
-                sortFunc = function(a, b) { return a.size < b.size };
+                sortFunc = function(a, b) { return a.size - b.size };
                 break;
             default:
                 break;
@@ -90,7 +91,7 @@ class FileCommander extends React.Component {
                 <div id="FileCommander-info">
                     {
                         <div id="FileCommander-backTo" onClick={this.props.handleFolderTraverseUp.bind(this)}> 
-                            {(this.state.namePath.length > 1 ? '< ' + this.state.namePath[this.state.namePath.length - 2].name : '')}
+                        {(this.state.namePath.length > 1 ? <span><img src={BackToIcon}/>  {this.state.namePath[this.state.namePath.length - 2].name}</span> : '')}
                         </div>
                     }
                     {
@@ -123,6 +124,14 @@ class FileCommander extends React.Component {
                         let files = e.dataTransfer.files;
 
                         if (files.length) {
+                            this.state.currentCommanderItems.push({
+                                name: files[0].name,
+                                size: files[0].size,
+                                isLoading: true
+                            });
+                            this.setState({
+                                currentCommanderItems: this.state.currentCommanderItems
+                            });
                             this.props.uploadDroppedFile(files);
                         }
 
@@ -152,10 +161,11 @@ class FileCommander extends React.Component {
                                                 id={item.id}
                                                 name={item.name}
                                                 type={item.type}
-                                                bucket={item.bucketId}
+                                                bucket={item.fileId}
                                                 created={moment(item.created).format('dddd')}
-                                                clickHandler={this.props.downloadFile.bind(null, item.bucketId)}
+                                                clickHandler={this.props.downloadFile.bind(null, item.fileId)}
                                                 selectHandler={(e) => this.props.selectCommanderItem(i, e)}
+                                                isLoading={item.isLoading}
                                             />
                                         }
                                     </span>
@@ -165,7 +175,7 @@ class FileCommander extends React.Component {
                                 inRoot ? (
                                     <div className="noItems">
                                         <h1>Your X Cloud is empty.</h1>
-                                        <h4>Click the upload button to get started.</h4>
+                                        <h4 className="noItems-subtext">Click the upload button or drop files in this window to get started.</h4>
                                     </div>
                                 ) : (
 

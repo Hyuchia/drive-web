@@ -8,12 +8,12 @@ import update from 'immutability-helper';
 import Popup from "reactjs-popup";
 
 import FileCommander from './FileCommander';
-import history from '../../history';
-import "../../App.css";
 import NavigationBar from "../navigationBar/NavigationBar";
-import { uploadFile, downloadFile } from '../../utils'
-import { resolve } from "dns";
-import { rejects } from "assert";
+import history from '../../history';
+import { removeAccents } from '../../utils';
+import "../../App.css";
+import logo from '../../assets/logo.svg';
+import closeTab from '../../assets/Dashboard-Icons/Close tab.svg';
 
 class XCloud extends React.Component {
   constructor(props) {
@@ -32,7 +32,8 @@ class XCloud extends React.Component {
       currentCommanderItems: [],
       namePath: [],
       selectedItems: [],
-      sortFunction: null
+      sortFunction: null,
+      searchFunction: null
     };
   }
 
@@ -107,12 +108,23 @@ class XCloud extends React.Component {
       method: 'get',
       headers
     }).then(response => response.json())
-      .catch(error => error)
+      .catch(error => error);
   }
 
   setSortFunction = (newSortFunc) => {
     // Set new sort function on state and call getFolderContent for refresh files list
     this.setState({ sortFunction: newSortFunc });
+    this.getFolderContent(this.state.currentFolderId);
+  }
+
+  setSearchFunction = (e) => {
+    // Set search function depending on search text input and refresh items list
+    const searchString = removeAccents(e.target.value.toString()).toLowerCase();
+    let func = null;
+    if(searchString) { 
+      func = function(item) { return item.name.toLowerCase().includes(searchString); }
+    }
+    this.setState({ searchFunction: func });
     this.getFolderContent(this.state.currentFolderId);
   }
 
@@ -146,9 +158,15 @@ class XCloud extends React.Component {
       .then(response => response.json())
       .then(data => {
         this.deselectAll();
-        // Set new items list and apply sort function if is set
+        // Set new items list
         let newCommanderFolders = _.map(data.children, o => _.extend({ type: "Folder" }, o))
         let newCommanderFiles = data.files;
+        // Apply search function if is set
+        if (this.state.searchFunction) {
+          newCommanderFolders = newCommanderFolders.filter(this.state.searchFunction);
+          newCommanderFiles = newCommanderFiles.filter(this.state.searchFunction);
+        }
+        // Apply sort function if is set
         if (this.state.sortFunction) {
           newCommanderFolders.sort(this.state.sortFunction);
           newCommanderFiles.sort(this.state.sortFunction);
@@ -182,14 +200,24 @@ class XCloud extends React.Component {
       method: "get",
       headers
     }).then(async (data) => {
-      if (data.status === 402) {
-        this.setState({ rateLimitModal: true })
-        return;
+      if (data.status != 200) {
+        throw data;
       }
-      const blob = await data.blob()
+
+      const blob = await data.blob();
+
       const name = data.headers.get('x-file-name')
       fileDownload(blob, name)
-    })
+    }).catch(async err => {
+      const res = await err.json();
+
+      if (err.status === 402) {
+        this.setState({ rateLimitModal: true })
+      } else {
+
+        alert('Error downloading file:\n' + err.status + ' - ' + err.statusText + '\n' + res.message + '\nFile id: ' + id);
+      }
+    });
   }
 
   localDownloadFile = (id) => {
@@ -207,12 +235,27 @@ class XCloud extends React.Component {
   }
 
   uploadFile = (e) => {
-    let test = true;
-    if (test) {
-      const folderName = this.state.namePath.length > 1 ? this.state.namePath[this.state.namePath.length - 1].name : "Root folder";
-      const folder = {
-        name: folderName,
-        bucket: this.state.currentFolderBucket
+    this.state.currentCommanderItems.push({
+      name: e.target.files[0].name,
+      size: e.target.files[0].size,
+      isLoading: true
+    });
+    this.setState({
+      currentCommanderItems: this.state.currentCommanderItems
+    });
+
+    const data = new FormData();
+    let headers = this.setHeaders();
+    delete headers['content-type'];
+    data.append('xfile', e.target.files[0]);
+    fetch(`/api/storage/folder/${this.state.currentFolderId}/upload`, {
+      method: "post",
+      headers,
+      body: data
+    }).then((response) => {
+      if (response.status === 402) {
+        this.setState({ rateLimitModal: true })
+        return;
       }
       uploadFile(this.props.user, folder, e.target.files[0])
       .then((result) => {
@@ -342,6 +385,10 @@ class XCloud extends React.Component {
     this.setState({ rateLimitModal: false })
   }
 
+  goToSettings = () => {
+    history.push('/settings');
+  }
+
   render() {
     // Check authentication
     if (this.props.isAuthenticated && this.state.isActivated && this.state.isInitialized) {
@@ -354,6 +401,7 @@ class XCloud extends React.Component {
             uploadFile={this.openUploadFile}
             uploadHandler={this.uploadFile}
             deleteItems={this.deleteItems}
+            setSearchFunction={this.setSearchFunction}
             style
           />
           <FileCommander
@@ -367,6 +415,7 @@ class XCloud extends React.Component {
             uploadDroppedFile={this.uploadDroppedFile}
             setSortFunction={this.setSortFunction}
           />
+
           <Popup open={this.state.chooserModalOpen} closeOnDocumentClick onClose={this.closeModal} >
             <div>
               <a href={'xcloud://' + this.state.token + '://' + JSON.stringify(this.props.user)}>Open mobile app</a>
@@ -376,18 +425,18 @@ class XCloud extends React.Component {
           <Popup open={this.state.rateLimitModal} closeOnDocumentClick onClose={this.closeRateLimitModal} className="popup--full-screen">
             <div className="popup--full-screen__content">
               <div className="popup--full-screen__close-button-wrapper">
-                <div className="close-button" onClick={this.closeRateLimitModal}>
-                  X
-                  </div>
+                <img src={closeTab} onClick={this.closeRateLimitModal} />
               </div>
+              <span className="logo"><img src={logo} /></span>
               <div className="message-wrapper">
-                <h1> You have run out of storage space! </h1>
-                <h2>Get more storage space by upgrading your storage plan on your settings page.</h2>
-              </div>
-              <div className="buttons-wrapper">
+                <h1> You have run out of storage. </h1>
+                <h2>You have currently used 1GB of storage. In order to start uploading more files please click the button below to upgrade your storage plan.</h2>
+                <div className="buttons-wrapper">
                 <div className="default-button button-primary" onClick={this.goToSettings}>
-                  Take me there
+                  Upgrade my storage plan
                 </div>
+              </div>
+
               </div>
             </div>
           </Popup>

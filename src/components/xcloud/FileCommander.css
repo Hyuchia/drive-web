@@ -1,5 +1,5 @@
 #FileCommander {
-    margin-top: 25px;
+    margin-top: 13px;
     max-width: 1440px;
     margin-left: auto;
     margin-right: auto;
@@ -18,9 +18,16 @@
     margin: auto;
 }
 
-#FileCommander-backTo {
-    font-size: 18px;
-     width: 200px;
+#FileCommander-backTo img {
+    position: relative;
+    top: -1.5px;
+}
+    #FileCommander-backTo {
+        height: 30px;
+        margin-top: 6px;
+        font-size: 18px;
+     width: 195px;
+     margin-left: 7px;
     font-weight: 600;
     display: inline;
     cursor: pointer;
@@ -29,7 +36,7 @@
 
 #FileCommander-items {
     display: flex;
-    margin-top: 20px;
+    margin-top: 13px;
     padding: 0px 38px;
     border-top: solid 1px #f2f2f2;
     flex-wrap: wrap;
@@ -45,6 +52,11 @@
     flex-direction: column;
     margin: 0 auto;
     height: 50vh;
+}
+
+.noItems-subtext {
+    color: #707070;
+    font-weight: normal;
 }
 
 #FileCommander-path .btn {

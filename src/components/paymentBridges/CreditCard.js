@@ -1,6 +1,7 @@
 import React from 'react';
 import { Container, Button } from 'react-bootstrap';
 import StripeCheckout from 'react-stripe-checkout';
+import './CreditCard.css';
 
 class CreditCard extends React.Component {
 
@@ -31,14 +32,9 @@ class CreditCard extends React.Component {
                 plan: this.state.plan.stripe_plan_id
             })
         }).then(response => {
-
-            console.log('Respuesta');
-
-            /*
-            response.json().then(data => {
-                alert(`We are in business, ${data.email}`);
-            });
-            */
+            return response.json();
+        }).then(body => {
+            this.setState({ statusMessage: body.message });
         });
     }
 
@@ -60,12 +56,15 @@ class CreditCard extends React.Component {
                     image="https://internxt.com/img/logos/internxtcircle.png"
                     currency="EUR"
                     bitcoin={false}
-                    stripeKey=""
-                    token={this.state.onToken}>
-                    
+                    email={JSON.parse(localStorage.xUser).email}
+                    stripeKey="pk_live_Rl9YfdPjEGxGUDh9BK5rgI3Y"
+                    token={this.state.onToken}
+                    billingAddress={true}
+                    zipCode={true}>
+
                     <Button
                         type="submit" block size="lg"
-                        className="mt-4">Buy now</Button>
+                        className="mt-4 buy-button">Buy now</Button>
 
                 </StripeCheckout>
             </Container>

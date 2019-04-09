@@ -1,11 +1,14 @@
 import * as React from "react";
-import { Button, ButtonToolbar, Form, Col } from "react-bootstrap";
-import ReCAPTCHA from "react-google-recaptcha";
+import { Button, Form, Col, Container, Row, FormGroup, FormControl } from "react-bootstrap";
 
 import history from '../../history';
 import "./Login.css";
 import logo from '../../assets/logo.svg';
-import { encryptText, decryptTextWithKey } from '../../utils';
+import { encryptText, decryptTextWithKey, decryptText, passToHash } from '../../utils';
+
+const bip39 = require('bip39');
+
+const DEV = process.env.NODE_ENV == 'development';
 
 class Login extends React.Component {
   constructor(props) {
@@ -27,27 +30,17 @@ class Login extends React.Component {
     const mnemonic = localStorage.getItem('xMnemonic');
     const user = JSON.parse(localStorage.getItem('xUser'));
 
-    if (user) { 
+    if (user && mnemonic) {
       this.props.handleKeySaved(user)
-      if (user.storeMnemonic === true && mnemonic) {
-        // Case of login and mnemonic loaded from server
-        history.push('/app')
-      } else {
-        // Case of login and mnemonic required by user
-        history.push('/keyPage');
-      }
+      history.push('/app')
     }
   }
 
   componentDidUpdate() {
     if (this.state.isAuthenticated === true && this.state.token && this.state.user) {
       const mnemonic = localStorage.getItem('xMnemonic');
-      if (this.state.user.storeMnemonic === true && mnemonic) {
-        // Case of login and mnemonic loaded from server
+      if (mnemonic) {
         history.push('/app')
-      } else {
-        // Case of login and mnemonic loaded from server
-        history.push('/KeyPage')
       }
     }
   }
@@ -55,17 +48,13 @@ class Login extends React.Component {
   setHeaders = () => {
     let headers = {
       Authorization: `Bearer ${localStorage.getItem("xToken")}`,
-      "content-type": "application/json; charset=utf-8"
-    };
-    if (!this.state.user.mnemonic) {
-      headers = Object.assign(headers, {
-        "internxt-mnemonic": localStorage.getItem("xMnemonic")
-      });
+      "content-type": "application/json; charset=utf-8",
+      "internxt-mnemonic": localStorage.getItem("xMnemonic")
     }
     return headers;
   }
 
-  validateForm = () => {
+  validateLoginForm = () => {
     let isValid = true;
 
     // Email validation
@@ -76,13 +65,11 @@ class Login extends React.Component {
     return isValid;
   }
 
-  validateEmail = (email) => {
-    var re = new RegExp("[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?");
-    return re.test(String(email).toLowerCase());
-  }
 
-  goRegister = () => {
-    history.push('/register');
+
+  validateEmail = (email) => {
+    let emailPattern = /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+    return emailPattern.test(String(email).toLowerCase());
   }
 
   handleChange = event => {
@@ -91,93 +78,76 @@ class Login extends React.Component {
     });
   }
 
-  captchaLaunch = event => {
-    event.preventDefault();
-    this.recaptchaRef.current.execute();
-  }
-
-  resolveCaptcha = captchaToken => {
+  doLogin = () => {
     const headers = this.setHeaders();
-    return new Promise((resolve, reject) => {
-      fetch('/api/captcha/' + captchaToken, {
-        method: 'GET',
-        headers
-      }).then(response => { resolve(response); })
-      .catch(err => { reject(err); });
-    });
-  }
 
-  handleSubmit = captchaToken => {
-    // Captcha resolution
-    const captchaPromise = this.resolveCaptcha(captchaToken) 
-    captchaPromise.then(response => response.json())
-    .then((resolved) => {
-      if (resolved.success) {
-        const headers = this.setHeaders();
-        // Proceed with submit
-        fetch("/api/login", {
-          method: "post",
-          headers,
-          body: JSON.stringify({ email: this.state.email, password: encryptText(this.state.password) })
-        })
-        .then(response => {
-            if (response.status === 200) {
-              // Manage succesfull login
-              response.json().then( (body) => {
-                const user = { 
-                  userId: body.user.userId,
-                  email: this.state.email,  
-                  mnemonic: body.user.mnemonic ? decryptTextWithKey(body.user.mnemonic, this.state.password) : null,
-                  root_folder_id: body.user.root_folder_id,
-                  storeMnemonic: body.user.storeMnemonic 
-                };
-                this.props.handleKeySaved(user)
-                localStorage.setItem('xToken',body.token);
-                if (user.mnemonic && body.user.storeMnemonic !== false) localStorage.setItem('xMnemonic', user.mnemonic);
-                localStorage.setItem('xUser', JSON.stringify(user));
-                this.setState({ 
-                  isAuthenticated: true, 
-                  token: body.token,
-                  user: user
-                })
-              });
-            } else if(response.status === 400) {
-              // Manage other cases:
-              // username / password do not match, user activation required...
-              response.json().then( (body) => {
-                alert(body.message);
-              });
-            } else {
-              // Manage user does not exist
-              alert("This account doesn't exists");
-            }
-        })
-          .catch(err => {
-            console.error("Login error. " + err);
-        });
-      }
-    }).catch((error) => {
-      console.error('Captcha validation error: ' + error);
+    // Proceed with submit
+    fetch("/api/login", {
+      method: "post",
+      headers,
+      body: JSON.stringify({ email: this.state.email })
     })
-    // After login
-    this.recaptchaRef.current.reset();
+      .then(response => {
+        if (response.status === 200) {
+          // Manage credentials verification
+          response.json().then((body) => {
+            // Check password
+            const salt = decryptText(body.sKey);
+            const hashObj = passToHash({ password: this.state.password, salt });
+            const encPass = encryptText(hashObj.hash);
+            fetch("/api/access", {
+              method: "post",
+              headers,
+              body: JSON.stringify({ email: this.state.email, password: encPass })
+            }).then(res => {
+              if (res.status === 200) {
+                // Manage succesfull login
+                res.json().then((data) => {
+                  const user = {
+                    userId: data.user.userId,
+                    email: this.state.email,
+                    mnemonic: data.user.mnemonic ? decryptTextWithKey(data.user.mnemonic, this.state.password) : null,
+                    root_folder_id: data.user.root_folder_id,
+                    storeMnemonic: data.user.storeMnemonic
+                  };
+                  this.props.handleKeySaved(user)
+                  localStorage.setItem('xToken', data.token);
+                  localStorage.setItem('xMnemonic', user.mnemonic);
+                  localStorage.setItem('xUser', JSON.stringify(user));
+                  this.setState({
+                    isAuthenticated: true,
+                    token: data.token,
+                    user: user
+                  });
+                });
+              }
+            });
+          });
+        } else if (response.status === 400) {
+          // Manage other cases:
+          // username / password do not match, user activation required...
+          response.json().then((body) => {
+            alert(body.error);
+          });
+        } else {
+          // Manage user does not exist
+          alert("This account doesn't exists");
+        }
+      })
+      .catch(err => {
+        console.error("Login error. " + err);
+        alert('Login error');
+      });
   }
 
-  render() {
-    const isValid = this.validateForm();
+  formerLogin = () => {
+    this.recaptchaRef = React.createRef();
+
     return (
       <div>
-        <img src={logo} className="Logo" style={{height: 27.5, width: 52.4}}/>
+        <img src={logo} className="Logo" style={{ height: 27.5, width: 52.4 }} />
         <div id="Login" className="Login">
-        <div className="LoginHeader">
-          <h2> Welcome to X Cloud</h2>
-          <ButtonToolbar>
-              <Button size="lg" className="button-on">Sign in</Button>
-              <Button size="lg" className="button-off" onClick={this.goRegister}>Create account</Button>
-            </ButtonToolbar>
-            <h4>Enter your details below</h4>
-        </div>
-          <Form className="formBlock" onSubmit={this.captchaLaunch}>
+          <Form className="formBlock" onSubmit={this.handleSubmit}>
             <Form.Row>
               <Form.Group as={Col} controlId="email">
                 <Form.Control autoFocus required size="lg" type="email" placeholder="Email" value={this.state.email} onChange={this.handleChange} />
@@ -186,18 +156,53 @@ class Login extends React.Component {
                 <Form.Control required size="lg" type="password" placeholder="Password" value={this.state.password} onChange={this.handleChange} />
               </Form.Group>
             </Form.Row>
-            <ReCAPTCHA sitekey="6Lf4_xsUAAAAAAEEhth1iM8LjyUn6gse-z0Y7iEp"
-              ref={this.recaptchaRef}
-              size="invisible"
-              onChange={this.handleSubmit}
-            />
             <p id="Terms">By signing in, you are agreeing to our <a href="https://internxt.com/terms">Terms {"&"} Conditions</a> and <a href="https://internxt.com/privacy">Privacy Policy</a></p>
-            <Button className="button-submit" disabled={!isValid} size="lg" type="submit" block> Continue </Button>
-          </Form> 
+            <Button className="button-submit" disabled={!this.validateForm()} size="lg" type="submit" block> Continue </Button>
+          </Form>
         </div>
-      </div>
+      </div>)
+  };
+
+  render() {
+    const isValid = this.validateLoginForm();
+
+    return (<div className="login-main">
+      <Container className="login-container-box">
+        <p className="logo"><img src={logo} /></p>
+        <div className="container-register">
+          <p className="container-title">Sign in to X Cloud</p>
+          <div className="menu-box">
+            <button className="on">Sign in</button>
+            <button className="off" onClick={(e) => {
+              history.push('/new');
+            }}>Create account</button>
+          </div>
+          <Form className="form-register" onSubmit={e => {
+            e.preventDefault();
+            this.doLogin();
+          }}>
+            <Form.Row>
+              <Form.Group as={Col} controlId="email">
+                <Form.Control xs={12} placeholder="Email address" required type="email" name="email" autoComplete="username" value={this.state.email} onChange={this.handleChange} />
+              </Form.Group>
+            </Form.Row>
+            <Form.Row>
+              <Form.Group as={Col} controlId="password">
+                <Form.Control xs={12} placeholder="Password" required type="password" name="password" autoComplete="current-password" value={this.state.password} onChange={this.handleChange} />
+              </Form.Group>
+            </Form.Row>
+            <Form.Row className="form-register-submit">
+              <Form.Group as={Col}>
+                <Button className="on btn-block" disabled={!isValid} xs={12} type="submit">Sign in</Button>
+              </Form.Group>
+            </Form.Row>
+          </Form>
+        </div>
+      </Container>
+    </div>
     );
   }
 }
 
 export default Login;
+

@@ -34,7 +34,7 @@ class NavigationBar extends React.Component {
                     <Dropdown.Menu>
                         <Dropdown.Item onClick={(e) => { history.push('/settings'); }}>Settings</Dropdown.Item>
                         <Dropdown.Divider />
-                        <Dropdown.Item onClick={(e) => { localStorage.clear(); window.location.reload();  }}>Sign out</Dropdown.Item>
+                        <Dropdown.Item onClick={(e) => { localStorage.clear(); window.location.reload(); }}>Sign out</Dropdown.Item>
                     </Dropdown.Menu>
                 </Dropdown>;
         }
@@ -42,13 +42,16 @@ class NavigationBar extends React.Component {
         if (props.showFileButtons) {
             this.state.navbarItems =
                 <Nav className="m-auto">
-                    <HeaderButton icon={search} name="Search files" />
+                    <div className="HeaderButton">
+                        <input alt="Search files" className="searchInput" required style={{ backgroundImage: 'url(' + search + ')' }} onChange={props.setSearchFunction} />
+                    </div>
+
                     <HeaderButton icon={uploadFile} name="Upload file" clickHandler={props.uploadFile} />
                     <HeaderButton icon={newFolder} name="New folder" clickHandler={props.createFolder} />
-                    <HeaderButton icon={downloadFile} name="Download" />
+                    {/*<HeaderButton icon={downloadFile} name="Download" />*/}
                     <HeaderButton icon={deleteFile} name="Delete" clickHandler={props.deleteItems} />
-                    <HeaderButton icon={share} name="Share" />
-                    <input id="uploadFile" type="file" onChange={props.uploadHandler}/>
+                    {/*<HeaderButton icon={share} name="Share" />*/}
+                    <input id="uploadFile" type="file" onChange={props.uploadHandler} />
                 </Nav>;
         }
     }
@@ -61,12 +64,12 @@ class NavigationBar extends React.Component {
         return (
             <Navbar className="p-1" id="mainNavBar">
                 <Navbar.Brand>
-                    <a href="/"><img src={logo} width='46' /></a>
+                    <a href="/"><img src={logo} width='54.4' height='28.6' /></a>
                 </Navbar.Brand>
                 <Nav className="m-auto">
                     {this.state.navbarItems}
                 </Nav>
-                <Nav>
+                <Nav style={{ margin: '0 13px 0 0' }}>
                     {this.state.menuButton}
                 </Nav>
             </Navbar>

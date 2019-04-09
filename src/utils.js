@@ -6,6 +6,19 @@ function copyToClipboard(text) {
   copy(text);
 }
 
+// Method to remove accents and other special characters from string
+function removeAccents(string) {
+  const accents = 'ÀÁÂÃÄÅĄĀāàáâãäåąßÒÓÔÕÕÖØŐòóôőõöøĎďDŽdžÈÉÊËĘèéêëęðÇçČčĆćÐÌÍÎÏĪìíîïīÙÚÛÜŰùűúûüĽĹŁľĺłÑŇŃňñńŔŕŠŚŞšśşŤťŸÝÿýŽŻŹžżźđĢĞģğ';
+  const accentsOut = 'AAAAAAAAaaaaaaaasOOOOOOOOoooooooDdDZdzEEEEEeeeeeeCcCcCcDIIIIIiiiiiUUUUUuuuuuLLLlllNNNnnnRrSSSsssTtYYyyZZZzzzdGGgg';
+  return string
+    .split("")
+    .map((letter, index) => {
+      const accentIndex = accents.indexOf(letter);
+      return accentIndex !== -1 ? accentsOut[accentIndex] : letter;
+    })
+    .join("");
+}
+
 // Method to hash password. If salt is passed, use it, in other case use crypto lib for generate salt
 function passToHash(passObject) {
   try {
@@ -219,6 +232,7 @@ const getFile = (user, bucketId, fileId) => {
 
 export {
   copyToClipboard,
+  removeAccents,
   passToHash,
   encryptText,
   decryptText,

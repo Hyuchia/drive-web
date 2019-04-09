@@ -13,20 +13,44 @@
     box-shadow: 0 0 0 0.2rem transparent !important;
 }
 
-nav {
-}
 .navbar {
     padding: 0 !important;
 }
 
 nav .navbar-brand {
-    margin: 10px 20px;
+    margin: 22px 22px;
 }
 
 input#uploadFile {
     display: none;
 }
 
-#mainNavBar h3 {
-    
+.searchInput {
+    background-color: #f7f7f7;
+    border-radius: 23.1px;
+    cursor: pointer;
+    border: none;
+    outline: none;
+    width: 46px;
+    font-size: 1em;
+    font-weight: 500;
+    transition: all .2s ease-in;
+    background-repeat: no-repeat;
+    background-size: 23px;
+    background-position: center;
+    float: left;
+    margin-left: 0px;
+    color: transparent;
 }
+
+.searchInput:focus, .searchInput:valid {
+    width: 380px;
+    transition: all .2s ease-in;
+    background-position: left;
+    background-position-x: 5%;
+    padding-left: 62px;
+    margin-left: -295px;
+    color: #333333;
+}
+
+
