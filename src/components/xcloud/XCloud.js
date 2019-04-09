@@ -10,7 +10,7 @@ import Popup from "reactjs-popup";
 import FileCommander from './FileCommander';
 import NavigationBar from "../navigationBar/NavigationBar";
 import history from '../../history';
-import { removeAccents } from '../../utils';
+import { removeAccents, uploadFile, downloadFile } from '../../utils';
 import "../../App.css";
 import logo from '../../assets/logo.svg';
 import closeTab from '../../assets/Dashboard-Icons/Close tab.svg';
@@ -158,7 +158,7 @@ class XCloud extends React.Component {
       .then(response => response.json())
       .then(data => {
         this.deselectAll();
-        // Set new items list
+        // Set new items list and apply sort function if is set
         let newCommanderFolders = _.map(data.children, o => _.extend({ type: "Folder" }, o))
         let newCommanderFiles = data.files;
         // Apply search function if is set
@@ -195,6 +195,7 @@ class XCloud extends React.Component {
   }
 
   downloadFile = (id) => {
+    console.log('SERVER DOWNLOAD');
     const headers = this.setHeaders();
     fetch(`/api/storage/file/${id}`, {
       method: "get",
@@ -204,8 +205,8 @@ class XCloud extends React.Component {
         throw data;
       }
 
-      const blob = await data.blob();
 
+      const blob = await data.blob();
       const name = data.headers.get('x-file-name')
       fileDownload(blob, name)
     }).catch(async err => {
@@ -214,13 +215,13 @@ class XCloud extends React.Component {
       if (err.status === 402) {
         this.setState({ rateLimitModal: true })
       } else {
-
         alert('Error downloading file:\n' + err.status + ' - ' + err.statusText + '\n' + res.message + '\nFile id: ' + id);
       }
     });
   }
 
   localDownloadFile = (id) => {
+    console.log('LOCAL DOWNLOAD');
     downloadFile(this.props.user, this.state.currentFolderBucket, id)
       .then((result) => {
         console.log('Succesfully downloaded file: ' + result.fileName);
@@ -235,6 +236,7 @@ class XCloud extends React.Component {
   }
 
   uploadFile = (e) => {
+    console.log('SERVER UPLOAD');
     this.state.currentCommanderItems.push({
       name: e.target.files[0].name,
       size: e.target.files[0].size,
@@ -243,7 +245,6 @@ class XCloud extends React.Component {
     this.setState({
       currentCommanderItems: this.state.currentCommanderItems
     });
-
     const data = new FormData();
     let headers = this.setHeaders();
     delete headers['content-type'];
@@ -256,6 +257,19 @@ class XCloud extends React.Component {
       if (response.status === 402) {
         this.setState({ rateLimitModal: true })
         return;
+      }
+      this.getFolderContent(this.state.currentFolderId);
+    })
+  }
+
+  localUploadFile = (e) => {
+    console.log('LOCAL UPLOAD');
+    let test = true;
+    if (test) {
+      const folderName = this.state.namePath.length > 1 ? this.state.namePath[this.state.namePath.length - 1].name : "Root folder";
+      const folder = {
+        name: folderName,
+        bucket: this.state.currentFolderBucket
       }
       uploadFile(this.props.user, folder, e.target.files[0])
       .then((result) => {
@@ -408,7 +422,7 @@ class XCloud extends React.Component {
             //   folderTree={this.state.folderTree}
             currentCommanderItems={this.state.currentCommanderItems}
             openFolder={this.openFolder}
-            downloadFile={this.localDownloadFile}
+            downloadFile={this.downloadFile}
             selectCommanderItem={this.selectCommanderItem}
             namePath={this.state.namePath}
             handleFolderTraverseUp={this.folderTraverseUp.bind(this)}
@@ -464,7 +478,7 @@ class XCloud extends React.Component {
         )
       }
       // If is waiting for async method return blank page
-      return (<div></div>)
+      return (<div>Loading...</div>)
     }
   }
 }
