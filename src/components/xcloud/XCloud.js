@@ -121,8 +121,8 @@ class XCloud extends React.Component {
     // Set search function depending on search text input and refresh items list
     const searchString = removeAccents(e.target.value.toString()).toLowerCase();
     let func = null;
-    if(searchString) { 
-      func = function(item) { return item.name.toLowerCase().includes(searchString); }
+    if (searchString) {
+      func = function (item) { return item.name.toLowerCase().includes(searchString); }
     }
     this.setState({ searchFunction: func });
     this.getFolderContent(this.state.currentFolderId);
@@ -220,6 +220,8 @@ class XCloud extends React.Component {
 
   downloadFile = (id) => {
     console.log('SERVER DOWNLOAD');
+    this.localDownloadFile(id);
+    return;
     const headers = this.setHeaders();
     fetch(`/api/storage/file/${id}`, {
       method: "get",
@@ -260,6 +262,8 @@ class XCloud extends React.Component {
   }
 
   uploadFile = (e) => {
+    this.localUploadFile(e);
+    return;
     console.log('SERVER UPLOAD');
     this.state.currentCommanderItems.push({
       name: e.target.files[0].name,
@@ -288,36 +292,21 @@ class XCloud extends React.Component {
 
   localUploadFile = (e) => {
     console.log('LOCAL UPLOAD');
-    let test = true;
-    if (test) {
-      const folderName = this.state.namePath.length > 1 ? this.state.namePath[this.state.namePath.length - 1].name : "Root folder";
-      const folder = {
-        name: folderName,
-        bucket: this.state.currentFolderBucket
-      }
-      uploadFile(this.props.user, folder, e.target.files[0])
+
+    const folderName = this.state.namePath.length > 1 ? this.state.namePath[this.state.namePath.length - 1].name : "Root folder";
+
+    const folder = {
+      name: folderName,
+      bucket: this.state.currentFolderBucket
+    }
+
+    uploadFile(this.props.user, folder, e.target.files[0])
       .then((result) => {
         console.log('Successfully uploaded file: ' + result.filename);
+        this.getFolderContent(this.state.currentFolderId);
       }).catch((error) => {
         console.error(error);
       });
-    } else {
-      const data = new FormData();
-      let headers = this.setHeaders();
-      delete headers['content-type'];
-      data.append('xfile', e.target.files[0]);
-      fetch(`/api/storage/folder/${this.state.currentFolderId}/upload`, {
-        method: "post",
-        headers,
-        body: data
-      }).then((response) => {
-        if (response.status === 402) {
-          this.setState({ rateLimitModal: true })
-          return;
-        }
-        this.getFolderContent(this.state.currentFolderId);
-      })
-    }
   }
 
   uploadDroppedFile = (e) => {
@@ -471,10 +460,10 @@ class XCloud extends React.Component {
                 <h1> You have run out of storage. </h1>
                 <h2>You have currently used 1GB of storage. In order to start uploading more files please click the button below to upgrade your storage plan.</h2>
                 <div className="buttons-wrapper">
-                <div className="default-button button-primary" onClick={this.goToSettings}>
-                  Upgrade my storage plan
+                  <div className="default-button button-primary" onClick={this.goToSettings}>
+                    Upgrade my storage plan
                 </div>
-              </div>
+                </div>
 
               </div>
             </div>

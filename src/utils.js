@@ -104,9 +104,13 @@ function uploadFile (user, folder, file) {
             name: encryptedFileName,
             type: fileExt,
             bucketId: addedFile.bucket,
-            folder_id: folder.id,
-            size: addedFile.size
+            folder_id: folder.bucket,
+            size: addedFile.size,
+            // Once file is created in the network, we will retrieve a file id
+            fileId: addedFile.id
           }
+
+          console.log(file);
   
           // Create file in xCloud db and add it to folder
           fetch('/api/storage/file', {
@@ -154,7 +158,11 @@ function downloadFile (user, folderBucket, fileId) {
 
 // Storj functions
 
-function getEnvironment(email, password, mnemonic) {
+function getEnvironmentWithProxy(email, password, mnemonic) {
+  return getEnvironment(email, password, mnemonic, true);
+}
+
+function getEnvironment(email, password, mnemonic, proxy = false) {
   try {
     let opts = {
       bridge: process.env.REACT_APP_STORJ_BRIDGE,
@@ -162,6 +170,9 @@ function getEnvironment(email, password, mnemonic) {
       encryptionKey: mnemonic,
       protocol: 'https',
       logger: console //ONLY FOR TESTING
+    }
+    if (proxy) {
+      opts.bridge = 'https://api.internxt.com:8081/' + opts.bridge;
     }
     return new Storj(opts);
   } catch (error) {
@@ -173,7 +184,7 @@ function getEnvironment(email, password, mnemonic) {
 const storeFile = (user, bucketId, file, fileName) => {
   return new Promise((resolve, reject) => {
     try {
-      const storj = getEnvironment(user.email, user.userId, user.mnemonic)
+      const storj = getEnvironmentWithProxy(user.email, user.userId, user.mnemonic)
       
       storj.on('ready', () => {
         let fileObj = storj.createFile(bucketId, fileName, file);
@@ -201,7 +212,7 @@ const getFile = (user, bucketId, fileId) => {
   return new Promise((resolve, reject) => {
     try {
       var fileName;
-      const storj = getEnvironment(user.email, user.userId, user.mnemonic);
+      const storj = getEnvironmentWithProxy(user.email, user.userId, user.mnemonic);
       var fileObj = storj.getFile(bucketId, fileId);
 
       fileObj.on('downloaded', () => {
