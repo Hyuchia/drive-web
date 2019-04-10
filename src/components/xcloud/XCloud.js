@@ -261,18 +261,24 @@ class XCloud extends React.Component {
     $("input#uploadFile").trigger("click");
   }
 
-  uploadFile = (e) => {
-    this.localUploadFile(e);
-    return;
-    console.log('SERVER UPLOAD');
+  insertLoadingFile = (name, size) => {
     this.state.currentCommanderItems.push({
-      name: e.target.files[0].name,
-      size: e.target.files[0].size,
+      name: name,
+      size: size,
       isLoading: true
     });
+
+    // TODO on file uploaded, prevent deleting the mock loading items.
     this.setState({
       currentCommanderItems: this.state.currentCommanderItems
     });
+  }
+
+  uploadFile = (e) => {
+    this.insertLoadingFile(e.target.files[0].name, e.target.files[0].size);
+    this.localUploadFile(e);
+    return;
+    console.log('SERVER UPLOAD');
     const data = new FormData();
     let headers = this.setHeaders();
     delete headers['content-type'];
