@@ -293,6 +293,8 @@ class XCloud extends React.Component {
   localUploadFile = (e) => {
     console.log('LOCAL UPLOAD');
 
+    console.log(e);
+
     const folderName = this.state.namePath.length > 1 ? this.state.namePath[this.state.namePath.length - 1].name : "Root folder";
 
     const folder = {
@@ -309,9 +311,15 @@ class XCloud extends React.Component {
       });
   }
 
+  localUploadDroppedFile = (e) => {
+    console.log('localUploadDroppedFile');
+    this.localUploadFile({ target: { files: e } });
+  }
+
   uploadDroppedFile = (e) => {
-    console.log("UPLOAD DROPPED");
-    console.log(e);
+    this.localUploadDroppedFile(e);
+    return;
+    console.log("SERVER UPLOAD DROPPED");
     const data = new FormData();
     let headers = this.setHeaders();
     delete headers['content-type'];
