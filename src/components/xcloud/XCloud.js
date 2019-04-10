@@ -218,12 +218,12 @@ class XCloud extends React.Component {
     })
   }
 
-  downloadFile = (id) => {
+  downloadFile = (bucketId, fileId) => {
     console.log('SERVER DOWNLOAD');
-    this.localDownloadFile(id);
+    this.localDownloadFile(bucketId, fileId);
     return;
     const headers = this.setHeaders();
-    fetch(`/api/storage/file/${id}`, {
+    fetch(`/api/storage/file/${fileId}`, {
       method: "get",
       headers
     }).then(async (data) => {
@@ -241,19 +241,19 @@ class XCloud extends React.Component {
       if (err.status === 402) {
         this.setState({ rateLimitModal: true })
       } else {
-        alert('Error downloading file:\n' + err.status + ' - ' + err.statusText + '\n' + res.message + '\nFile id: ' + id);
+        alert('Error downloading file:\n' + err.status + ' - ' + err.statusText + '\n' + res.message + '\nFile id: ' + fileId);
       }
     });
   }
 
-  localDownloadFile = (id) => {
-    console.log('LOCAL DOWNLOAD');
-    downloadFile(this.props.user, this.state.currentFolderBucket, id)
-      .then((result) => {
+  localDownloadFile = (bucketId, fileId) => {
+    console.log('LOCAL DOWNLOAD ');
+    downloadFile(this.props.user, bucketId, fileId)
+      .then(result => {
         console.log('Succesfully downloaded file: ' + result);
         fileDownload(result.blob, result.fileName)
-      }).catch((error) => {
-        console.error(error);
+      }).catch(err => {
+        console.error(err);
       })
   }
 
@@ -346,11 +346,10 @@ class XCloud extends React.Component {
   deleteItems = () => {
     const selectedItems = this.state.selectedItems;
     const bucket = _.last(this.state.namePath).bucket;
+
     const headers = this.setHeaders();
-    const fetchOptions = {
-      method: "DELETE",
-      headers
-    };
+    const fetchOptions = { method: 'DELETE', headers };
+    
     if (selectedItems.length === 0) return;
     const deletionRequests = _.map(selectedItems, (v, i) => {
       const url =

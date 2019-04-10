@@ -139,13 +139,13 @@ function uploadFile(user, folder, file) {
 // result is object containing:
 //  blob: blob object with data from file
 //  fileName: decrypted file name
-function downloadFile(user, folderBucket, fileId) {
+function downloadFile(user, bucketId, fileId) {
   return new Promise((resolve, reject) => {
 
     // Check mnemonic
     if (!user.mnemonic) throw new Error('Your mnemonic is invalid')
 
-    getFile(user, folderBucket, fileId)
+    getFile(user, bucketId, fileId)
       .then((res) => {
         resolve(res);
       }).catch((err) => {
@@ -172,6 +172,7 @@ function getEnvironment(email, password, mnemonic, proxy = false) {
     if (proxy) {
       opts.bridge = 'https://api.internxt.com:8081/' + opts.bridge;
     }
+    console.log(opts.bridge);
     return new Storj(opts);
   } catch (error) {
     console.error('(getEnvironment) ' + error);
@@ -217,7 +218,9 @@ const getFile = (user, bucketId, fileId) => {
   return new Promise((resolve, reject) => {
     try {
       var fileName;
+      console.log('Mnemonic: -%s- ', user.mnemonic);
       const storj = getEnvironmentWithProxy(user.email, user.userId, user.mnemonic);
+      console.log(storj.resolveFile);
       var fileObj = storj.getFile(bucketId, fileId);
 
       fileObj.on('downloaded', () => {
@@ -225,7 +228,11 @@ const getFile = (user, bucketId, fileId) => {
       });
       fileObj.on('done', () => {
         console.log('file finished decrypting')
+
+        const isEnc = Buffer.from(fileObj.name, 'base64').toString('base64') == fileObj.name;
+
         // Decrypt filename
+        console.log('Encrypted name: ', fileObj.name);
         const fileNameEnc = fileObj.name.split('.')[0];
         const fileNameDecrypt = decryptText(fileNameEnc);
         const fileExt = fileObj.name.split('.')[1];
