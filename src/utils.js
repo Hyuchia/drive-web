@@ -22,11 +22,11 @@ function removeAccents(string) {
 // Method to hash password. If salt is passed, use it, in other case use crypto lib for generate salt
 function passToHash(passObject) {
   try {
-    const salt = passObject.salt ? CryptoJS.enc.Hex.parse(passObject.salt) : CryptoJS.lib.WordArray.random(128/8);
-    const hash = CryptoJS.PBKDF2(passObject.password, salt, { keySize: 256/32, iterations: 10000 });
+    const salt = passObject.salt ? CryptoJS.enc.Hex.parse(passObject.salt) : CryptoJS.lib.WordArray.random(128 / 8);
+    const hash = CryptoJS.PBKDF2(passObject.password, salt, { keySize: 256 / 32, iterations: 10000 });
     const hashedObjetc = {
-      salt : salt.toString(),
-      hash : hash.toString()
+      salt: salt.toString(),
+      hash: hash.toString()
     }
     return hashedObjetc;
   } catch (error) {
@@ -79,80 +79,78 @@ function decryptTextWithKey(encryptedText, keyToDecrypt) {
 }
 
 // Upload files to node network
-function uploadFile (user, folder, file) {
-	return new Promise(async (resolve, reject) => {
-		try {
-			// Check mnemonic
+function uploadFile(user, folder, file) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Check mnemonic
       if (!user.mnemonic) throw new Error('Your mnemonic is invalid')
       const fileName = file.name;
-			console.log('Starting file upload: ' + fileName);
-			console.log('Folder to upload file: ' + folder.name)
-			// Get file name without extension
-			const extSeparatorPos = fileName.lastIndexOf('.')
-			const fileNameNoExt = fileName.slice(0, extSeparatorPos)
-			console.log('Encrypting file name')
-			const encryptedFileName = encryptText(fileNameNoExt)
-			const fileExt = fileName.slice(extSeparatorPos + 1);
-			const encryptedFileNameWithExt = encryptedFileName + '.' + fileExt;
-			console.log('Uploading file to network');
+      console.log('Starting to upload %s to folder: %s (Bucket: %s)', fileName, folder.name, folder.bucket)
+      // Get file name without extension
+      const extSeparatorPos = fileName.lastIndexOf('.')
+      const fileNameNoExt = fileName.slice(0, extSeparatorPos)
+      console.log('Encrypting file name...')
+      const encryptedFileName = encryptText(fileNameNoExt)
+      const fileExt = fileName.slice(extSeparatorPos + 1);
+      const encryptedFileNameWithExt = encryptedFileName + '.' + fileExt;
+      console.log('Uploading file to network');
 
       // Call node network method to store file
       storeFile(user, folder.bucket, file, encryptedFileNameWithExt)
-      .then((addedFile) => {
-        if (addedFile) {
-          const file = {
-            name: encryptedFileName,
-            type: fileExt,
-            bucketId: addedFile.bucket,
-            folder_id: folder.bucket,
-            size: addedFile.size,
-            // Once file is created in the network, we will retrieve a file id
-            fileId: addedFile.id
-          }
+        .then((addedFile) => {
+          if (addedFile) {
+            const file = {
+              name: encryptedFileName,
+              type: fileExt,
+              bucketId: addedFile.bucket,
+              folder_id: folder.bucket,
+              size: addedFile.size,
+              // Once file is created in the network, we will retrieve a file id
+              fileId: addedFile.id
+            }
 
-          console.log(file);
-  
-          // Create file in xCloud db and add it to folder
-          fetch('/api/storage/file', {
-            method: "post",
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("xToken")}`,
-              "content-type": "application/json; charset=utf-8",
-              "internxt-mnemonic": localStorage.getItem("xMnemonic")
-            },
-            body: JSON.stringify({ file })
-          }).then(response => response.json())
-            .then(data => {
-              resolve(data)
-          });
-        } else {
-          // If storeFile fails uploading file, throw error
-          throw new Error('Error uploading file to node network');
-        }
-      }).catch((err) => {
-        reject(err.message)
-      });
-		} catch (error) {
+            // Create file in xCloud db and add it to folder
+            fetch('/api/storage/file', {
+              method: "post",
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("xToken")}`,
+                "content-type": "application/json; charset=utf-8",
+                "internxt-mnemonic": localStorage.getItem("xMnemonic")
+              },
+              body: JSON.stringify({ file })
+            }).then(response => response.json())
+              .then(data => {
+                resolve(data)
+              });
+          } else {
+            // If storeFile fails uploading file, throw error
+            throw new Error('Error uploading file to node network');
+          }
+        }).catch((err) => {
+          reject(err.message)
+        });
+    } catch (error) {
       reject(error.message)
-		}
-	})
+    }
+  })
 }
 
 // Download file from node network
 // result is object containing:
 //  blob: blob object with data from file
 //  fileName: decrypted file name
-function downloadFile (user, folderBucket, fileId) {
+function downloadFile(user, folderBucket, fileId) {
   return new Promise((resolve, reject) => {
+
     // Check mnemonic
     if (!user.mnemonic) throw new Error('Your mnemonic is invalid')
 
     getFile(user, folderBucket, fileId)
-    .then((res) => {
-      resolve(res);
-    }).catch((err) => {
-      reject(err.message);
-    })
+      .then((res) => {
+        resolve(res);
+      }).catch((err) => {
+        reject(err.message);
+      })
   })
 }
 
@@ -185,30 +183,37 @@ const storeFile = (user, bucketId, file, fileName) => {
   return new Promise((resolve, reject) => {
     try {
       const storj = getEnvironmentWithProxy(user.email, user.userId, user.mnemonic)
-      
+
+
       storj.on('ready', () => {
         let fileObj = storj.createFile(bucketId, fileName, file);
 
         fileObj.on('ready', () => {
-          console.log('File processed');
+          console.log('File ready');
         });
+
         fileObj.on('done', (res) => {
           console.log('Upload finished')
-          console.log(res);
+          console.log('Done, res', res);
           resolve(res);
         });
+
         fileObj.on('error', (error) => {
-          console.error(error);
+          console.log('Upload finished with error');
+          console.error('Error ', error);
           reject(error);
-        })
+        });
+
       })
-    } catch(error){
+    } catch (error) {
+      console.log('Catched error');
       reject(error);
     }
   });
 }
 
 const getFile = (user, bucketId, fileId) => {
+  console.log("getFile Bucket: %s File: %s", bucketId, fileId);
   return new Promise((resolve, reject) => {
     try {
       var fileName;
@@ -225,10 +230,10 @@ const getFile = (user, bucketId, fileId) => {
         const fileNameDecrypt = decryptText(fileNameEnc);
         const fileExt = fileObj.name.split('.')[1];
         fileName = `${fileNameDecrypt}.${fileExt}`;
-        
+
         fileObj.getBlob(function (err, blob) {
           if (err) throw err
-          resolve({blob, fileName});
+          resolve({ blob, fileName });
         })
       })
       fileObj.on('error', (error) => {

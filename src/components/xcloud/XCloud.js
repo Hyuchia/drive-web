@@ -250,7 +250,7 @@ class XCloud extends React.Component {
     console.log('LOCAL DOWNLOAD');
     downloadFile(this.props.user, this.state.currentFolderBucket, id)
       .then((result) => {
-        console.log('Succesfully downloaded file: ' + result.fileName);
+        console.log('Succesfully downloaded file: ' + result);
         fileDownload(result.blob, result.fileName)
       }).catch((error) => {
         console.error(error);
@@ -302,7 +302,7 @@ class XCloud extends React.Component {
 
     uploadFile(this.props.user, folder, e.target.files[0])
       .then((result) => {
-        console.log('Successfully uploaded file: ' + result.filename);
+        console.log('Successfully uploaded file: ' + JSON.stringify(result));
         this.getFolderContent(this.state.currentFolderId);
       }).catch((error) => {
         console.error(error);
