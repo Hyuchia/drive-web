@@ -89,12 +89,12 @@ function uploadFile(user, folder, file) {
       // Get file name without extension
       const extSeparatorPos = fileName.lastIndexOf('.')
       const fileNameNoExt = fileName.slice(0, extSeparatorPos)
-      console.log('Encrypting file name...')
+
       const encryptedFileName = encryptText(fileNameNoExt)
       const fileExt = fileName.slice(extSeparatorPos + 1);
       const encryptedFileNameWithExt = encryptedFileName + '.' + fileExt;
-      console.log('Uploading file to network');
 
+      
       // Call node network method to store file
       storeFile(user, folder.bucket, file, encryptedFileNameWithExt)
         .then((addedFile) => {
@@ -173,7 +173,7 @@ function getEnvironment(email, password, mnemonic, proxy = false) {
     if (proxy) {
       opts.bridge = 'https://api.internxt.com:8081/' + opts.bridge;
     }
-    console.log(opts.bridge);
+
     return new Storj(opts);
   } catch (error) {
     console.error('(getEnvironment) ' + error);
@@ -196,7 +196,6 @@ const storeFile = (user, bucketId, file, fileName) => {
 
         fileObj.on('done', (res) => {
           console.log('Upload finished')
-          console.log('Done, res', res);
           resolve(res);
         });
 
@@ -215,20 +214,17 @@ const storeFile = (user, bucketId, file, fileName) => {
 }
 
 const getFile = (user, bucketId, fileId) => {
-  console.log("getFile Bucket: %s File: %s", bucketId, fileId);
   return new Promise((resolve, reject) => {
     try {
       var fileName;
-      console.log('Mnemonic: -%s- ', user.mnemonic);
       const storj = getEnvironmentWithProxy(user.email, user.userId, user.mnemonic);
-      console.log(storj.resolveFile);
+
       var fileObj = storj.getFile(bucketId, fileId);
 
       fileObj.on('downloaded', () => {
         console.log('Finished downloading file!')
       });
       fileObj.on('done', () => {
-        console.log('file finished decrypting')
         const isEnc = Buffer.from(fileObj.name, 'base64').toString('base64') == fileObj.name;
 
         if (isEnc) {

@@ -223,7 +223,7 @@ class XCloud extends React.Component {
   }
 
   serverDownloadFile = (fileId) => {
-    console.log('SERVER DOWNLOAD');
+
     const headers = this.setHeaders();
     fetch(`/api/storage/file/${fileId}`, {
       method: "get",
@@ -248,11 +248,9 @@ class XCloud extends React.Component {
   }
 
   localDownloadFile = (bucketId, fileId) => {
-    console.log('LOCAL DOWNLOAD');
-
     downloadFile(this.props.user, bucketId, fileId)
       .then(result => {
-        console.log('Succesfully downloaded file: ' + result);
+        console.log('Successfully downloaded file');
         fileDownload(result.blob, result.fileName)
       }).catch(err => {
         if (err == 'Invalid download method') {
@@ -305,7 +303,7 @@ class XCloud extends React.Component {
   }
 
   localUploadFile = (e) => {
-    console.log('LOCAL UPLOAD');
+
     const folderName = this.state.namePath.length > 1 ? this.state.namePath[this.state.namePath.length - 1].name : "Root folder";
 
     const folder = {
@@ -315,7 +313,7 @@ class XCloud extends React.Component {
 
     uploadFile(this.props.user, folder, e.target.files[0])
       .then((result) => {
-        console.log('Successfully uploaded file: ' + JSON.stringify(result));
+        console.log('Successfully uploaded file');
         this.getFolderContent(this.state.currentFolderId);
       }).catch((error) => {
         console.error(error);
