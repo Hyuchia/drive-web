@@ -219,9 +219,11 @@ class XCloud extends React.Component {
   }
 
   downloadFile = (bucketId, fileId) => {
-    console.log('SERVER DOWNLOAD');
     this.localDownloadFile(bucketId, fileId);
-    return;
+  }
+
+  serverDownloadFile = (fileId) => {
+    console.log('SERVER DOWNLOAD');
     const headers = this.setHeaders();
     fetch(`/api/storage/file/${fileId}`, {
       method: "get",
@@ -230,7 +232,6 @@ class XCloud extends React.Component {
       if (data.status != 200) {
         throw data;
       }
-
 
       const blob = await data.blob();
       const name = data.headers.get('x-file-name')
@@ -247,13 +248,18 @@ class XCloud extends React.Component {
   }
 
   localDownloadFile = (bucketId, fileId) => {
-    console.log('LOCAL DOWNLOAD ');
+    console.log('LOCAL DOWNLOAD');
+
     downloadFile(this.props.user, bucketId, fileId)
       .then(result => {
         console.log('Succesfully downloaded file: ' + result);
         fileDownload(result.blob, result.fileName)
       }).catch(err => {
-        console.error(err);
+        if (err == 'Invalid download method') {
+          this.serverDownloadFile(fileId);
+        } else {
+          console.error('Download error: ', err);
+        }
       })
   }
 
@@ -277,7 +283,9 @@ class XCloud extends React.Component {
   uploadFile = (e) => {
     this.insertLoadingFile(e.target.files[0].name, e.target.files[0].size);
     this.localUploadFile(e);
-    return;
+  }
+
+  serverUploadFile = (e) => {
     console.log('SERVER UPLOAD');
     const data = new FormData();
     let headers = this.setHeaders();
@@ -298,9 +306,6 @@ class XCloud extends React.Component {
 
   localUploadFile = (e) => {
     console.log('LOCAL UPLOAD');
-
-    console.log(e);
-
     const folderName = this.state.namePath.length > 1 ? this.state.namePath[this.state.namePath.length - 1].name : "Root folder";
 
     const folder = {
@@ -360,9 +365,7 @@ class XCloud extends React.Component {
     });
     Promise.all(deletionRequests)
       .then(result => {
-        setTimeout(() => {
-          this.getFolderContent(this.state.currentFolderId, false);
-        }, 100);
+        setTimeout(() => { this.getFolderContent(this.state.currentFolderId, false); }, 100);
       })
       .catch(err => {
         throw new Error(err);

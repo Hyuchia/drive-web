@@ -141,15 +141,16 @@ function uploadFile(user, folder, file) {
 //  fileName: decrypted file name
 function downloadFile(user, bucketId, fileId) {
   return new Promise((resolve, reject) => {
-
     // Check mnemonic
-    if (!user.mnemonic) throw new Error('Your mnemonic is invalid')
+    if (!user.mnemonic) {
+      reject(new Error('Your mnemonic is invalid'))
+    }
 
     getFile(user, bucketId, fileId)
-      .then((res) => {
+      .then(res => {
         resolve(res);
-      }).catch((err) => {
-        reject(err.message);
+      }).catch(err => {
+        reject(err);
       })
   })
 }
@@ -228,20 +229,24 @@ const getFile = (user, bucketId, fileId) => {
       });
       fileObj.on('done', () => {
         console.log('file finished decrypting')
-
         const isEnc = Buffer.from(fileObj.name, 'base64').toString('base64') == fileObj.name;
 
-        // Decrypt filename
-        console.log('Encrypted name: ', fileObj.name);
-        const fileNameEnc = fileObj.name.split('.')[0];
-        const fileNameDecrypt = decryptText(fileNameEnc);
-        const fileExt = fileObj.name.split('.')[1];
-        fileName = `${fileNameDecrypt}.${fileExt}`;
+        if (isEnc) {
+          // File was uploaded with old method. Cannot be downloaded locally.
+          reject('Invalid download method');
+        } else {
+          // Decrypt filename
+          const fileNameEnc = fileObj.name.split('.')[0];
+          const fileNameDecrypt = decryptText(fileNameEnc);
+          const fileExt = fileObj.name.split('.')[1];
+          fileName = `${fileNameDecrypt}.${fileExt}`;
 
-        fileObj.getBlob(function (err, blob) {
-          if (err) throw err
-          resolve({ blob, fileName });
-        })
+          fileObj.getBlob(function (err, blob) {
+            if (err) throw err
+            resolve({ blob, fileName });
+          })
+        }
+
       })
       fileObj.on('error', (error) => {
         console.error(error);
