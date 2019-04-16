@@ -25,32 +25,39 @@ input#uploadFile {
     display: none;
 }
 
-.searchInput {
-    background-color: #f7f7f7;
+.top-bar {
+    width: 60px;
+}
+.search-container {
+    max-width: 950px;
+    margin: auto;
+    padding-right: 8px;
+}
+
+.search {
     border-radius: 23.1px;
-    cursor: pointer;
-    border: none;
-    outline: none;
+    border: 1px solid #ccc;
+    padding: 5px;
     width: 46px;
-    font-size: 1em;
-    font-weight: 500;
-    transition: all .2s ease-in;
+    height: 46px;
+    -webkit-transition: all .5s ease;
+    -moz-transition: all .5s ease;
+    transition: all .5s ease;
+    float: right;
+
+    border: solid 0px;
+    cursor: pointer;
+    outline: none;
+    background-color: #f7f7f7;
     background-repeat: no-repeat;
-    background-size: 23px;
-    background-position: center;
-    float: left;
-    margin-left: 0px;
+    background-position: 50%;
     color: transparent;
 }
 
-.searchInput:focus, .searchInput:valid {
+.search:focus, .search:valid {
     width: 380px;
-    transition: all .2s ease-in;
     background-position: left;
     background-position-x: 5%;
     padding-left: 62px;
-    margin-left: -295px;
     color: #333333;
 }
-
-
